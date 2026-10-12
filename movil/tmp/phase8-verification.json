@@ -1,0 +1,29 @@
+{
+  "project": "ecohome-3c91d",
+  "ruleset": "projects/ecohome-3c91d/rulesets/d022a265-d854-4570-874b-2b834b5211b1",
+  "updateTime": "2026-09-25T06:57:44.062658Z",
+  "rulesIdentical": true,
+  "indexes": [
+    {
+      "name": "projects/ecohome-3c91d/databases/(default)/collectionGroups/activity/indexes/CICAgOjXh4EK",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "userId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "__name__",
+          "order": "DESCENDING"
+        }
+      ],
+      "state": "READY",
+      "density": "SPARSE_ALL"
+    }
+  ],
+  "devicesWithPower": 11
+}

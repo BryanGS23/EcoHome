@@ -1,0 +1,77 @@
+{
+  "project": "ecohome-3c91d",
+  "ruleset": "projects/ecohome-3c91d/rulesets/841bcc85-9d81-4e36-82a3-9871a2530b66",
+  "updateTime": "2026-09-25T18:21:41.018488Z",
+  "rulesIdentical": true,
+  "globalActivityQuery": "OK",
+  "alertsQuery": "OK",
+  "indexes": [
+    {
+      "name": "projects/ecohome-3c91d/databases/(default)/collectionGroups/activity/indexes/CICAgOjXh4EK",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "userId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "__name__",
+          "order": "DESCENDING"
+        }
+      ],
+      "state": "READY",
+      "density": "SPARSE_ALL"
+    },
+    {
+      "name": "projects/ecohome-3c91d/databases/(default)/collectionGroups/alerts/indexes/CICAgJiUpoMK",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "userId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "__name__",
+          "order": "DESCENDING"
+        }
+      ],
+      "state": "READY",
+      "density": "SPARSE_ALL"
+    }
+  ],
+  "alertIndexes": [
+    {
+      "name": "projects/ecohome-3c91d/databases/(default)/collectionGroups/alerts/indexes/CICAgJiUpoMK",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "userId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "__name__",
+          "order": "DESCENDING"
+        }
+      ],
+      "state": "READY",
+      "density": "SPARSE_ALL"
+    }
+  ],
+  "flutterTests": 74,
+  "rulesTests": 52,
+  "nodeTests": 1,
+  "analyze": "No issues",
+  "apk": "build/app/outputs/flutter-apk/app-debug.apk"
+}

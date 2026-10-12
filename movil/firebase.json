@@ -1,0 +1,25 @@
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "ecohome-3c91d",
+          "appId": "1:653756752483:android:0c9913e99ac0a2b7404e56",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "ecohome-3c91d",
+          "configurations": {
+            "android": "1:653756752483:android:0c9913e99ac0a2b7404e56"
+          }
+        }
+      }
+    }
+  },
+  "firestore": {
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  }
+}

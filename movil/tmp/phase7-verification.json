@@ -1,0 +1,28 @@
+{
+  "project": "ecohome-3c91d",
+  "ruleset": "projects/ecohome-3c91d/rulesets/ff8dc590-7dd6-42e1-99d0-4c47c59b0465",
+  "updateTime": "2026-09-25T02:03:12.887266Z",
+  "rulesIdentical": true,
+  "scenes": [
+    {
+      "id": "ahorro_energia",
+      "name": "Ahorro de Energía",
+      "actions": 8
+    },
+    {
+      "id": "modo_away",
+      "name": "Modo Away",
+      "actions": 10
+    },
+    {
+      "id": "modo_casa",
+      "name": "Modo Casa",
+      "actions": 6
+    },
+    {
+      "id": "modo_noche",
+      "name": "Modo Noche",
+      "actions": 8
+    }
+  ]
+}

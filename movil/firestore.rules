@@ -1,0 +1,202 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function activeUser() {
+      return request.auth != null
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.active == true;
+    }
+    function isAdmin() {
+      let profile = get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+      return request.auth != null && profile.active == true && profile.role == 'admin';
+    }
+    function catalogChange() {
+      return isAdmin() && getAfter(/databases/$(database)/documents/_admin/catalog).data.updatedAt == request.time;
+    }
+    function named(data) {
+      return data.name is string && data.name.size() > 0 && data.name.size() <= 80 && data.name.matches('.*[^ ].*');
+    }
+    function timestamps(data) {
+      return data.createdAt is timestamp && data.updatedAt == request.time;
+    }
+    match /_admin/catalog {
+      allow read: if isAdmin();
+      allow create: if isAdmin() && request.resource.data.keys().hasOnly(['revision','updatedAt'])
+        && request.resource.data.revision == 1 && request.resource.data.updatedAt == request.time;
+      allow update: if isAdmin() && request.resource.data.keys().hasOnly(['revision','updatedAt'])
+        && request.resource.data.revision == resource.data.revision + 1 && request.resource.data.updatedAt == request.time;
+      allow delete: if false;
+    }
+    match /alerts/{alertId} {
+      function own() { return activeUser() && resource.data.userId == request.auth.uid; }
+      function validAlert(data) {
+        let device = get(/databases/$(database)/documents/devices/$(data.deviceId)).data;
+        return data.keys().hasOnly(['title','message','type','deviceId','userId','read','createdAt'])
+          && data.userId == request.auth.uid && data.read == false
+          && data.type == 'device_offline' && data.title == 'Dispositivo sin conexión'
+          && data.message == device.name + ' está sin conexión (simulación).'
+          && data.createdAt == request.time && data.deviceId is string
+          && device.online == false && device.type in ['camera','lock']
+          && alertId == request.auth.uid + '_' + data.deviceId + '_' + string(int(request.time.toMillis() / 86400000));
+      }
+      // Missing-document reads allow the idempotent creation transaction.
+      allow get: if activeUser() && (!exists(/databases/$(database)/documents/alerts/$(alertId)) || resource.data.userId == request.auth.uid);
+      allow list: if own() && request.query.limit <= 100;
+      allow create: if activeUser() && validAlert(request.resource.data);
+      allow update: if own() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read'])
+        && request.resource.data.read == true;
+      allow delete: if false;
+    }
+    match /energy_records/{recordId} {
+      function validSample(data) {
+        let device = get(/databases/$(database)/documents/devices/$(data.deviceId)).data;
+        let watts = device.enabled && device.online ? device.energyConsumption : 0;
+        return data.keys().hasAll(['deviceId','areaId','powerWatts','durationHours','consumption','recordedAt'])
+          && data.keys().hasOnly(['deviceId','areaId','powerWatts','durationHours','consumption','recordedAt'])
+          && data.deviceId is string && data.areaId == device.areaId
+          && recordId == data.deviceId + '_' + string(int(request.time.toMillis() / 86400000))
+          && data.powerWatts is number && data.powerWatts >= 0 && data.powerWatts <= 100000
+          && data.powerWatts == watts && data.durationHours == 1
+          && data.consumption is number && data.consumption == data.powerWatts * data.durationHours
+          && data.recordedAt == request.time;
+      }
+      allow read: if activeUser();
+      allow create: if activeUser() && validSample(request.resource.data);
+      allow update, delete: if false;
+    }
+    match /activity/{activityId} {
+      function ownActivity() { return activeUser() && resource.data.userId == request.auth.uid; }
+      function validEvent(data) {
+        return data.keys().hasAll(['userId','action','entityType','entityId','description','createdAt'])
+          && data.keys().hasOnly(['userId','action','entityType','entityId','description','createdAt'])
+          && data.userId == request.auth.uid && data.entityId is string
+          && data.entityId.size() > 0 && data.entityId.size() <= 128
+          && data.description is string && data.description.size() > 0 && data.description.size() <= 300
+          && data.createdAt == request.time
+          && ((data.action == 'device_control' && data.entityType == 'device'
+            && getAfter(/databases/$(database)/documents/devices/$(data.entityId)).data.updatedAt == request.time)
+          || (data.action == 'scene_executed' && data.entityType == 'scene'
+            && get(/databases/$(database)/documents/scenes/$(data.entityId)).data.enabled == true)
+          || (isAdmin() && data.entityType in ['users','areas','devices','scenes']
+            && ((data.action == 'admin_create'
+              && !exists(/databases/$(database)/documents/$(data.entityType)/$(data.entityId))
+              && getAfter(/databases/$(database)/documents/$(data.entityType)/$(data.entityId)).data.createdAt == request.time)
+            || (data.action == 'admin_update'
+              && exists(/databases/$(database)/documents/$(data.entityType)/$(data.entityId))
+              && getAfter(/databases/$(database)/documents/$(data.entityType)/$(data.entityId)).data.updatedAt == request.time)
+            || (data.action == 'admin_delete' && data.entityType != 'users'
+              && exists(/databases/$(database)/documents/$(data.entityType)/$(data.entityId))
+              && !existsAfter(/databases/$(database)/documents/$(data.entityType)/$(data.entityId))))));
+      }
+      allow get: if ownActivity() || isAdmin();
+      allow list: if (ownActivity() && request.query.limit <= 50) || (isAdmin() && request.query.limit <= 100);
+      allow create: if activeUser() && validEvent(request.resource.data);
+      allow update, delete: if false;
+    }
+    match /areas/{areaId} {
+      function valid(data) { return data.keys().hasAll(['name','createdAt','updatedAt']) && data.keys().hasOnly(['name','createdAt','updatedAt']) && named(data) && timestamps(data); }
+      allow read: if activeUser();
+      allow create: if catalogChange() && request.resource.data.createdAt == request.time && valid(request.resource.data);
+      allow update: if catalogChange() && request.resource.data.createdAt == resource.data.createdAt && valid(request.resource.data);
+      allow delete: if catalogChange();
+    }
+    match /scenes/{sceneId} {
+      function action(a) {
+        // Accessing required fields also rejects missing keys. Keep validation
+        // compact so 20 actions plus the atomic activity event fit the budget.
+        return a.deviceId is string && a.enabled is bool
+          && a.keys().hasOnly(['deviceId','enabled','value']) && a.get('value', 0) is number;
+      }
+      function valid(data) {
+        let actions = data.actions;
+        let count = actions.size();
+        return data.keys().hasAll(['name','enabled','actions','createdAt','updatedAt'])
+          && data.keys().hasOnly(['name','enabled','actions','createdAt','updatedAt'])
+          && named(data) && timestamps(data) && data.enabled is bool
+          && data.actions is list && count >= 1 && count <= 20
+          && (count <= 0 || action(actions[0]))
+          && (count <= 1 || action(actions[1]))
+          && (count <= 2 || action(actions[2]))
+          && (count <= 3 || action(actions[3]))
+          && (count <= 4 || action(actions[4]))
+          && (count <= 5 || action(actions[5]))
+          && (count <= 6 || action(actions[6]))
+          && (count <= 7 || action(actions[7]))
+          && (count <= 8 || action(actions[8]))
+          && (count <= 9 || action(actions[9]))
+          && (count <= 10 || action(actions[10]))
+          && (count <= 11 || action(actions[11]))
+          && (count <= 12 || action(actions[12]))
+          && (count <= 13 || action(actions[13]))
+          && (count <= 14 || action(actions[14]))
+          && (count <= 15 || action(actions[15]))
+          && (count <= 16 || action(actions[16]))
+          && (count <= 17 || action(actions[17]))
+          && (count <= 18 || action(actions[18]))
+          && (count <= 19 || action(actions[19]));
+      }
+      allow read: if activeUser();
+      allow create: if catalogChange() && request.resource.data.createdAt == request.time && valid(request.resource.data);
+      allow update: if catalogChange() && request.resource.data.createdAt == resource.data.createdAt && valid(request.resource.data);
+      allow delete: if catalogChange();
+    }
+    match /devices/{deviceId} {
+      function validControl(data) {
+        return data.enabled is bool && data.value is number
+          && ((data.type == 'light' && data.value >= 0 && data.value <= 100 && data.value % 1 == 0)
+          || (data.type == 'fan' && data.value >= 1 && data.value <= 3 && data.value % 1 == 0)
+          || (data.type == 'airConditioner' && data.value >= 16 && data.value <= 30 && data.value % 1 == 0)
+          || (data.type in ['camera', 'lock', 'television', 'outlet', 'other'] && data.value == 0));
+      }
+      allow read: if activeUser();
+      allow update: if activeUser() && resource.data.online == true
+        && validControl(request.resource.data)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['enabled', 'value', 'updatedAt'])
+        && request.resource.data.updatedAt == request.time;
+      function validDevice(data) {
+        return data.keys().hasAll(['name','type','areaId','enabled','online','value','energyConsumption','createdAt','updatedAt'])
+          && data.keys().hasOnly(['name','type','areaId','enabled','online','value','energyConsumption','createdAt','updatedAt'])
+          && named(data) && timestamps(data) && data.online is bool && data.enabled is bool
+          && data.areaId is string && existsAfter(/databases/$(database)/documents/areas/$(data.areaId))
+          && data.energyConsumption is number && data.energyConsumption >= 0 && data.energyConsumption <= 100000
+          && (validControl(data) || (data.type == 'sensor' && data.value is number));
+      }
+      allow create: if catalogChange() && validDevice(request.resource.data) && request.resource.data.createdAt == request.time;
+      allow update: if catalogChange() && validDevice(request.resource.data) && request.resource.data.createdAt == resource.data.createdAt;
+      allow delete: if catalogChange();
+    }
+    match /users/{uid} {
+      function owner() {
+        return request.auth != null && request.auth.uid == uid;
+      }
+      function valid(data) {
+        return data.keys().hasAll(['uid', 'name', 'email', 'role', 'active', 'createdAt', 'updatedAt'])
+          && data.keys().hasOnly(['uid', 'name', 'email', 'role', 'active', 'createdAt', 'updatedAt'])
+          && data.uid == uid && data.name is string
+          && data.name.size() > 0 && data.name.size() <= 80
+          && data.name.matches('.*[^ ].*')
+          && data.email is string && data.email.size() > 0
+          && data.role in ['user', 'admin'] && data.active is bool
+          && data.createdAt is timestamp && data.updatedAt is timestamp;
+      }
+      allow get: if owner() || isAdmin();
+      allow create: if owner() && valid(request.resource.data)
+        && request.resource.data.email == request.auth.token.email
+        && request.resource.data.role == 'user'
+        && request.resource.data.active == true
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.updatedAt == request.time;
+      allow update: if owner() && resource.data.active == true
+        && valid(request.resource.data)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'updatedAt'])
+        && request.resource.data.updatedAt == request.time;
+      allow list: if isAdmin();
+      allow update: if isAdmin() && request.auth.uid != uid && valid(request.resource.data)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['role','active','updatedAt'])
+        && request.resource.data.updatedAt == request.time;
+      allow delete: if false;
+    }
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
