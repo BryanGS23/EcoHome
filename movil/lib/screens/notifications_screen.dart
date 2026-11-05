@@ -81,6 +81,7 @@ class NotificationsScreen extends StatelessWidget {
                 subtitle: Text(
                   '${alert.message}\n${alert.createdAt.toLocal()}\n${alert.read ? 'Leída' : 'No leída'}',
                 ),
+                onTap: alert.read ? null : () => notifications.markRead(alert),
                 trailing: alert.read
                     ? null
                     : IconButton(

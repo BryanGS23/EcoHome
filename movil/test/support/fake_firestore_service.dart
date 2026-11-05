@@ -17,6 +17,7 @@ class FakeFirestoreService implements FirestoreService {
 
   @override
   Future<void> markAlertRead(String id) async {
+    if (failure != null) throw failure!;
     alerts[id]!['read'] = true;
     homeEvents.add(null);
   }

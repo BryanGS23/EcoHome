@@ -227,6 +227,7 @@ class _AuthenticatedHomeState extends State<_AuthenticatedHome> {
     if (!mounted) return;
     widget.auth.clearError();
     setState(() => _currentIndex = index);
+    _notifications.setViewing(index == 7);
   }
 
   @override
@@ -267,7 +268,11 @@ class _AuthenticatedHomeState extends State<_AuthenticatedHome> {
             user: widget.user,
             onNavigate: _navigateTo,
           ),
-          ActivityScreen(activity: _activity, onNavigate: _navigateTo),
+          ActivityScreen(
+            activity: _activity,
+            actorName: widget.user.profile?.name,
+            onNavigate: _navigateTo,
+          ),
           if (_currentIndex == 6)
             AdminScreen(user: widget.user, onBack: () => _navigateTo(4))
           else

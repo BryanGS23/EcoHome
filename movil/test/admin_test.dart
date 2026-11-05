@@ -321,4 +321,55 @@ void main() {
       await tester.pumpWidget(const SizedBox.shrink());
     },
   );
+
+  testWidgets(
+    'actividad existente muestra quién creó dispositivos y escenas y quién ejecutó escenas',
+    (tester) async {
+      await tester.runAsync(() => setupProfile());
+      repository.rows['users'] = {
+        'creator': {'name': 'Ana'},
+        'executor': {'name': 'Luis'},
+      };
+      repository.rows['activity'] = {
+        'device': {
+          'userId': 'creator',
+          'entityType': 'devices',
+          'description': 'Creó dispositivo Luz',
+          'createdAt': stamp,
+        },
+        'scene': {
+          'userId': 'creator',
+          'entityType': 'scenes',
+          'description': 'Creó escena Noche',
+          'createdAt': stamp,
+        },
+        'execution': {
+          'userId': 'executor',
+          'entityType': 'scene',
+          'description': 'Ejecutó escena Noche',
+          'createdAt': stamp,
+        },
+        'legacy': {
+          'userId': 'missing',
+          'entityType': 'scene',
+          'description': 'Evento antiguo',
+          'createdAt': stamp,
+        },
+      };
+      await tester.pumpWidget(
+        MaterialApp(
+          home: AdminScreen(user: user, onBack: () {}, repository: repository),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text('Actividad global'));
+      await tester.tap(find.text('Actividad global'));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Ana · devices'), findsOneWidget);
+      expect(find.textContaining('Ana · scenes'), findsOneWidget);
+      expect(find.textContaining('Luis · scene'), findsOneWidget);
+      expect(find.textContaining('Usuario no disponible'), findsOneWidget);
+      await tester.pumpWidget(const SizedBox());
+    },
+  );
 }
