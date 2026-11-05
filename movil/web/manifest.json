@@ -1,11 +1,11 @@
 {
-    "name": "movil",
-    "short_name": "movil",
+    "name": "EcoHome",
+    "short_name": "EcoHome",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "description": "Administra tu hogar y consulta tu consumo de energia.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

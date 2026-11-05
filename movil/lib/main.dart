@@ -13,6 +13,7 @@ import 'repositories/area_repository.dart';
 import 'repositories/device_repository.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 import 'firebase_options.dart';
 import 'providers/auth_provider.dart';
@@ -39,7 +40,7 @@ Future<void> onBackgroundPush(RemoteMessage message) async {
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  FirebaseMessaging.onBackgroundMessage(onBackgroundPush);
+  if (!kIsWeb) FirebaseMessaging.onBackgroundMessage(onBackgroundPush);
   final push = PushService();
   unawaited(push.start());
   runApp(EcoHomeApp(push: push));
