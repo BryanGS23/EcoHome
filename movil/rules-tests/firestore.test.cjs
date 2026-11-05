@@ -326,6 +326,16 @@ test('energía y actividad: permisos, deduplicación y atomicidad',async t=>{
     denied(await request(':commit','energy-user',{writes:[sample()]}));
     denied(await request(':commit','energy-user',{writes:[{delete:`${database}/documents/energy_records/${recordId}`}]}));
   });
+  await t.test('cada simulación agrega una hora, sin sobrescribir ni atribuir a otra cuenta',async()=>{
+    const id1='light_sala_1_energy-user_1001';
+    const id2='light_sala_1_energy-user_1002';
+    allowed(await request(':commit','energy-user',{writes:[sample({simulationId:'1001'},id1)]}));
+    allowed(await request(':commit','energy-user',{writes:[sample({simulationId:'1002'},id2)]}));
+    denied(await request(':commit','energy-user',{writes:[sample({simulationId:'1001'},id1)]}));
+    denied(await request(':commit','energy-user',{writes:[sample({simulationId:'1003'},'light_sala_1_admin_1003')]}));
+    denied(await request(':commit','energy-user',{writes:[sample({simulationId:'bad'},'light_sala_1_energy-user_bad')]}));
+    denied(await request(':commit','energy-user',{writes:[sample({simulationId:'1004',powerWatts:999,consumption:999},'light_sala_1_energy-user_1004')]}));
+  });
   await t.test('inactivo no lee energía/actividad ni crea eventos',async()=>{
     allowed(await update('energy-user',{active:false},'owner'));
     denied(await request(`/energy_records/${recordId}`,'energy-user'));

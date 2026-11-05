@@ -155,7 +155,7 @@ void main() {
   );
 
   testWidgets(
-    'navegación Energía simula sin duplicar y Perfil abre actividad propia',
+    'navegación Energía acumula horas y Perfil abre actividad propia',
     (tester) async {
       repository.currentUser = FakeFirebaseUser();
       firestore.devices['lamp'] = {
@@ -181,8 +181,8 @@ void main() {
       expect(find.text('12.0 Wh'), findsWidgets);
       await tester.tap(find.text('Simular 1 hora'));
       await tester.pumpAndSettle();
-      expect(firestore.energyRecords, hasLength(1));
-      expect(find.text('Las muestras de hoy ya existen.'), findsOneWidget);
+      expect(firestore.energyRecords, hasLength(2));
+      expect(find.text('24.0 Wh'), findsWidgets);
       await tester.tap(find.text('Perfil').last);
       await tester.pumpAndSettle();
       await tester.tap(find.text('Mi actividad'));

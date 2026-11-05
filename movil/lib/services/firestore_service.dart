@@ -55,11 +55,14 @@ class FirestoreService {
 
   Future<int> simulateEnergy(List<String> ids, DateTime now) async {
     var created = 0;
-    final day = EnergyRecord.dayKey(now);
+    final simulationId = now.microsecondsSinceEpoch.toString();
+    final uid = _currentUid();
     // Separate idempotent transactions: retrying completes a partially interrupted sample.
     for (final id in ids.toSet()) {
       created += await _firestore.runTransaction<int>((tx) async {
-        final ref = _firestore.collection('energy_records').doc('${id}_$day');
+        final ref = _firestore
+            .collection('energy_records')
+            .doc('${id}_${uid}_$simulationId');
         final existing = await tx.get(ref);
         if (existing.exists) return 0;
         final snapshot = await tx.get(_firestore.collection('devices').doc(id));
@@ -69,6 +72,7 @@ class FirestoreService {
             ? device.energyConsumption.toDouble()
             : 0.0;
         tx.set(ref, {
+          'simulationId': simulationId,
           'deviceId': id,
           'areaId': device.areaId,
           'powerWatts': watts,

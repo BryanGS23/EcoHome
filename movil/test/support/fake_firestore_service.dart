@@ -3,7 +3,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:movil/services/firestore_service.dart';
 import 'package:movil/models/scene.dart';
 import 'package:movil/models/device.dart';
-import 'package:movil/models/energy_record.dart';
 
 class FakeFirestoreService implements FirestoreService {
   final alerts = <String, Map<String, dynamic>>{};
@@ -75,9 +74,10 @@ class FakeFirestoreService implements FirestoreService {
   @override
   Future<int> simulateEnergy(List<String> ids, DateTime now) async {
     if (failure != null) throw failure!;
+    if (failure != null) throw failure!;
     var count = 0;
     for (final id in ids.toSet()) {
-      final key = '${id}_${EnergyRecord.dayKey(now)}';
+      final key = '${id}_${userId}_${now.microsecondsSinceEpoch}';
       if (energyRecords.containsKey(key)) continue;
       final device = Device.fromMap(id, devices[id]!);
       final watts = device.enabled && device.online

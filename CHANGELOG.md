@@ -1,5 +1,12 @@
 # Registro de cambios
 
+## 1.2.0+5 — 2026-11-05
+
+- Cada pulsación de «Simular 1 hora» agrega otra hora al consumo acumulado con el estado actual de los dispositivos.
+- Los dispositivos apagados o sin conexión aportan 0 Wh. Se conservan los registros anteriores.
+- Los reintentos de una operación parcial durante la misma sesión completan esa hora sin duplicar registros ya guardados.
+- Actualiza las reglas Firestore para admitir múltiples simulaciones por día y conserva compatibilidad con muestras de versiones anteriores.
+
 ## 1.1.1+4 — 2026-11-04
 
 - Marca las alertas como leídas al abrir Notificaciones y mientras la sección permanece visible, tanto en web como en Android.

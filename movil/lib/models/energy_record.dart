@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-/// One explicitly requested simulated hour per device per UTC day, in Wh.
+/// One explicitly requested simulated hour per device, in Wh.
 class EnergyRecord {
   const EnergyRecord({
     required this.id,

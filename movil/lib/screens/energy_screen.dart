@@ -34,7 +34,7 @@ class EnergyScreen extends StatelessWidget {
                     style: TextStyle(fontWeight: FontWeight.bold),
                   ),
                   const Text(
-                    'Muestras de 1 hora con el estado actual; una por dispositivo y día UTC. No representan medición real ni consumo de 24 horas.',
+                    'Cada pulsación agrega 1 hora simulada con el estado actual de los dispositivos. El consumo se acumula; los dispositivos apagados o sin conexión aportan 0 Wh. No es una medición real.',
                   ),
                   FilledButton(
                     onPressed:
@@ -47,7 +47,11 @@ class EnergyScreen extends StatelessWidget {
                             devices.devices.map((d) => d.id).toList(),
                           ),
                     child: Text(
-                      energy.saving ? 'Simulando…' : 'Simular 1 hora',
+                      energy.saving
+                          ? 'Simulando…'
+                          : energy.hasPendingSimulation
+                          ? 'Reintentar simulación'
+                          : 'Simular 1 hora',
                     ),
                   ),
                   if (energy.message != null) Text(energy.message!),

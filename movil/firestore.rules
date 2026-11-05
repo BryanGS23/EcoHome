@@ -51,9 +51,11 @@ service cloud.firestore {
         let device = get(/databases/$(database)/documents/devices/$(data.deviceId)).data;
         let watts = device.enabled && device.online ? device.energyConsumption : 0;
         return data.keys().hasAll(['deviceId','areaId','powerWatts','durationHours','consumption','recordedAt'])
-          && data.keys().hasOnly(['deviceId','areaId','powerWatts','durationHours','consumption','recordedAt'])
+          && data.keys().hasOnly(['deviceId','areaId','powerWatts','durationHours','consumption','recordedAt','simulationId'])
           && data.deviceId is string && data.areaId == device.areaId
-          && recordId == data.deviceId + '_' + string(int(request.time.toMillis() / 86400000))
+          && ((!('simulationId' in data) && recordId == data.deviceId + '_' + string(int(request.time.toMillis() / 86400000)))
+            || (data.get('simulationId', '') is string && data.get('simulationId', '').matches('[0-9]{1,20}')
+              && recordId == data.deviceId + '_' + request.auth.uid + '_' + data.simulationId))
           && data.powerWatts is number && data.powerWatts >= 0 && data.powerWatts <= 100000
           && data.powerWatts == watts && data.durationHours == 1
           && data.consumption is number && data.consumption == data.powerWatts * data.durationHours
