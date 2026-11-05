@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import '../repositories/admin_repository.dart';
 
 class AdminService {
@@ -8,6 +9,24 @@ class AdminService {
       _uid = currentUid ?? (() => FirebaseAuth.instance.currentUser!.uid);
   final FirebaseFirestore _db;
   final String Function() _uid;
+  Future<void> deleteUser(String uid) async {
+    if (uid == _uid()) {
+      throw const AdminFailure('No puedes eliminar tu propia cuenta.');
+    }
+    try {
+      await FirebaseFunctions.instance
+          .httpsCallable('deleteUserAccount')
+          .call<void>({'uid': uid});
+    } on FirebaseFunctionsException catch (e) {
+      if (e.code == 'not-found' || e.code == 'unimplemented') {
+        throw const AdminFailure('La eliminación de cuentas todavía no está disponible. Inténtalo más tarde.');
+      }
+      throw AdminFailure(
+        e.message ?? 'No se pudo eliminar la cuenta. Reintenta.',
+      );
+    }
+  }
+
   static const collections = [
     'users',
     'areas',

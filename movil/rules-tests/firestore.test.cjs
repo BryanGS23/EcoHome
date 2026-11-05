@@ -63,6 +63,11 @@ const adminEvent=(id,action,type,entityId,changes={})=>({
 });
 
 test('reglas mínimas de perfiles: permisos reales del motor Firestore', async t => {
+  await t.test('una cuenta eliminada no recrea su perfil con un token anterior',async()=>{
+    allowed(await request(':commit','owner',{writes:[{update:{name:`${database}/documents/_user_deletions/deleted-user`,fields:fields({completed:true})}}]}));
+    denied(await create('deleted-user'));
+    denied(await request('/_user_deletions/deleted-user','alice'));
+  });
   await t.test('cuenta antigua puede consultar su documento inexistente', async () => {
     const result = await request('/users/legacy','legacy');
     assert.equal(result.status,404,JSON.stringify(result.body));

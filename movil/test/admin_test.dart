@@ -284,6 +284,50 @@ void main() {
     );
   }
   testWidgets(
+    'eliminar usuario requiere confirmación, permite cancelar y protege la cuenta propia',
+    (tester) async {
+      await tester.runAsync(() => setupProfile());
+      repository.rows['users'] = {
+        'me': {
+          'name': 'Mi cuenta',
+          'email': 'me@test.com',
+          'role': 'admin',
+          'active': true,
+        },
+        'other': {
+          'name': 'Otra cuenta',
+          'email': 'other@test.com',
+          'role': 'user',
+          'active': true,
+        },
+      };
+      await tester.pumpWidget(
+        MaterialApp(
+          home: AdminScreen(user: user, onBack: () {}, repository: repository),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byTooltip('Eliminar'), findsOneWidget);
+      await tester.tap(find.byTooltip('Eliminar'));
+      await tester.pumpAndSettle();
+      expect(
+        find.textContaining('Esta acción no se puede deshacer'),
+        findsOneWidget,
+      );
+      await tester.tap(find.text('Cancelar'));
+      await tester.pumpAndSettle();
+      expect(repository.writes, 0);
+      await tester.tap(find.byTooltip('Eliminar'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(FilledButton, 'Eliminar'));
+      await tester.pumpAndSettle();
+      expect(repository.writes, 1);
+      expect(find.text('Otra cuenta'), findsNothing);
+      expect(find.text('Mi cuenta'), findsOneWidget);
+      await tester.pumpWidget(const SizedBox());
+    },
+  );
+  testWidgets(
     'ruta directa no permite user y editor abierto se bloquea al revocar admin',
     (tester) async {
       await tester.runAsync(() => setupProfile(role: 'user'));

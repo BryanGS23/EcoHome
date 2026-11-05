@@ -1,5 +1,14 @@
 # Registro de cambios
 
+## 1.3.0+6 — 2026-11-05
+
+- Agrega eliminación de usuarios desde Administración con confirmación y bloqueo de autoeliminación.
+- La función de servidor verifica que quien solicita la operación sea un administrador activo; elimina Authentication, perfil y alertas propias.
+- Conserva los datos compartidos y registra la eliminación en la actividad histórica.
+- Bloquea la recreación del perfil con tokens anteriores y permite completar eliminaciones interrumpidas.
+- Requiere desplegar `deleteUserAccount` en Cloud Functions y actualizar las reglas Firestore.
+- Activación pendiente: Firebase exige plan Blaze para publicar el servicio; no se modificó el plan del proyecto.
+
 ## 1.2.0+5 — 2026-11-05
 
 - Cada pulsación de «Simular 1 hora» agrega otra hora al consumo acumulado con el estado actual de los dispositivos.
