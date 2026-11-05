@@ -342,22 +342,23 @@ potencia con energía: Wh = W × horas. No se modelan variaciones por intensidad
 velocidad o temperatura; la potencia efectiva es nominal si enabled y online son
 true, o cero en caso contrario. No son mediciones de hardware.
 
-`energy_records/{deviceId}_{díaUTC}` contiene:
+`energy_records/{deviceId}_{uid}_{simulationId}` contiene (los registros diarios anteriores se conservan):
 
 - deviceId, areaId: identidad y área al tomar la muestra.
 - powerWatts: potencia efectiva utilizada para reproducir el cálculo.
 - durationHours: 1, intervalo hipotético fijo de la simulación.
 - consumption: energía estimada de ese intervalo en Wh.
 - recordedAt: timestamp del servidor al crear la muestra.
+- simulationId: identificador de la hora solicitada, reutilizado al reintentar.
 
 La pestaña Energía tiene un botón explícito **Simular 1 hora**. No existe un timer
-que genere datos: como máximo crea una muestra por dispositivo y día UTC, compartida
-por todos los usuarios del proyecto. Se utiliza el estado actual, no se pretende
-reconstruir el consumo real transcurrido. Repetir el botón u operar desde otro
-teléfono no sobrescribe ni duplica la muestra. El día del ID se valida contra la
-hora del servidor, por lo que un reloj de teléfono incorrecto puede causar rechazo.
+que genere datos: cada pulsación agrega una nueva muestra de una hora por dispositivo.
+El consumo es compartido por todos los usuarios del proyecto. Se utiliza el estado
+actual, no se pretende reconstruir el consumo real transcurrido. Repetir el botón
+después de una simulación exitosa agrega otra hora; las muestras previas no se sobrescriben.
 Cada dispositivo tiene su propia transacción; una interrupción puede dejar un
-subconjunto creado, y reintentar completa los faltantes sin duplicar los existentes.
+subconjunto creado, y reintentar durante la misma sesión completa los faltantes sin
+duplicar los existentes. Si se cierra la app, la operación pendiente no se conserva.
 
 La pantalla y el Dashboard muestran el total de las muestras de hoy UTC y de los
 últimos siete días UTC, no una estimación continua de 24 horas por día. Incluye
@@ -419,7 +420,8 @@ Prueba física:
    debe mostrar los controles y un evento por escena exitosa, recientes primero.
 3. Provoca una escena fallida con un dispositivo offline: no debe crear actividad.
 4. En Energía pulsa Simular 1 hora. Comprueba Wh, área/dispositivo, barra de hoy y
-   Dashboard; repetir no cambia los registros ya creados. Reabre para verificar persistencia.
+   Dashboard; repetir acumula otra hora. Apaga un dispositivo y comprueba que deja de
+   aportar consumo en la siguiente hora. Reabre para verificar persistencia.
 5. Entra con otra cuenta: energía compartida, actividad propia. No se registra login.
 6. Con Node detenido, energía/actividad/dispositivos/escenas siguen funcionando.
    Node conserva solo alertas, temperatura/confort y seguridad del prototipo.

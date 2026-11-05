@@ -119,7 +119,43 @@ void main() {
   });
 
   testWidgets(
-    'navegación Energía simula sin duplicar y Perfil abre actividad propia',
+    'solo abrir Notificaciones marca alertas y actualiza el contador',
+    (tester) async {
+      repository.currentUser = FakeFirebaseUser();
+      firestore.alerts['own'] = {
+        'userId': 'test-uid',
+        'title': 'Alerta',
+        'message': 'Sin conexión',
+        'type': 'device_offline',
+        'read': false,
+        'createdAt': Timestamp.now(),
+      };
+      await mount(tester);
+      await tester.pumpAndSettle();
+      expect(homes.single.unreadAlerts, 1);
+      expect(firestore.alerts['own']!['read'], false);
+      await tester.tap(find.byTooltip('Notificaciones'));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('No leída'), findsNothing);
+      expect(find.textContaining('Leída'), findsOneWidget);
+      expect(homes.single.unreadAlerts, 0);
+      expect(firestore.alerts['own']!['read'], true);
+      firestore.alerts['new'] = {...firestore.alerts['own']!, 'read': false};
+      firestore.homeEvents.add(null);
+      await tester.pumpAndSettle();
+      expect(homes.single.unreadAlerts, 0);
+      await tester.tap(find.byType(BackButton));
+      await tester.pumpAndSettle();
+      firestore.alerts['later'] = {...firestore.alerts['own']!, 'read': false};
+      firestore.homeEvents.add(null);
+      await tester.pumpAndSettle();
+      expect(homes.single.unreadAlerts, 1);
+      await tester.pumpWidget(const SizedBox());
+    },
+  );
+
+  testWidgets(
+    'navegación Energía acumula horas y Perfil abre actividad propia',
     (tester) async {
       repository.currentUser = FakeFirebaseUser();
       firestore.devices['lamp'] = {
@@ -145,8 +181,8 @@ void main() {
       expect(find.text('12.0 Wh'), findsWidgets);
       await tester.tap(find.text('Simular 1 hora'));
       await tester.pumpAndSettle();
-      expect(firestore.energyRecords, hasLength(1));
-      expect(find.text('Las muestras de hoy ya existen.'), findsOneWidget);
+      expect(firestore.energyRecords, hasLength(2));
+      expect(find.text('24.0 Wh'), findsWidgets);
       await tester.tap(find.text('Perfil').last);
       await tester.pumpAndSettle();
       await tester.tap(find.text('Mi actividad'));

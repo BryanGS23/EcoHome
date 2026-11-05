@@ -16,6 +16,15 @@ class EcoAlert {
   final AlertType type;
   final DateTime createdAt;
   final bool read;
+  EcoAlert asRead() => EcoAlert(
+    id: id,
+    title: title,
+    message: message,
+    userId: userId,
+    type: type,
+    createdAt: createdAt,
+    read: true,
+  );
   factory EcoAlert.fromMap(String id, Map<String, dynamic> data) {
     if (data['type'] != 'device_offline' ||
         data['title'] is! String ||

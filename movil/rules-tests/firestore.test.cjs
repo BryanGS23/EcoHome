@@ -63,6 +63,11 @@ const adminEvent=(id,action,type,entityId,changes={})=>({
 });
 
 test('reglas mínimas de perfiles: permisos reales del motor Firestore', async t => {
+  await t.test('una cuenta eliminada no recrea su perfil con un token anterior',async()=>{
+    allowed(await request(':commit','owner',{writes:[{update:{name:`${database}/documents/_user_deletions/deleted-user`,fields:fields({completed:true})}}]}));
+    denied(await create('deleted-user'));
+    denied(await request('/_user_deletions/deleted-user','alice'));
+  });
   await t.test('cuenta antigua puede consultar su documento inexistente', async () => {
     const result = await request('/users/legacy','legacy');
     assert.equal(result.status,404,JSON.stringify(result.body));
@@ -325,6 +330,16 @@ test('energía y actividad: permisos, deduplicación y atomicidad',async t=>{
     denied(await request(`/energy_records/${recordId}`,null));
     denied(await request(':commit','energy-user',{writes:[sample()]}));
     denied(await request(':commit','energy-user',{writes:[{delete:`${database}/documents/energy_records/${recordId}`}]}));
+  });
+  await t.test('cada simulación agrega una hora, sin sobrescribir ni atribuir a otra cuenta',async()=>{
+    const id1='light_sala_1_energy-user_1001';
+    const id2='light_sala_1_energy-user_1002';
+    allowed(await request(':commit','energy-user',{writes:[sample({simulationId:'1001'},id1)]}));
+    allowed(await request(':commit','energy-user',{writes:[sample({simulationId:'1002'},id2)]}));
+    denied(await request(':commit','energy-user',{writes:[sample({simulationId:'1001'},id1)]}));
+    denied(await request(':commit','energy-user',{writes:[sample({simulationId:'1003'},'light_sala_1_admin_1003')]}));
+    denied(await request(':commit','energy-user',{writes:[sample({simulationId:'bad'},'light_sala_1_energy-user_bad')]}));
+    denied(await request(':commit','energy-user',{writes:[sample({simulationId:'1004',powerWatts:999,consumption:999},'light_sala_1_energy-user_1004')]}));
   });
   await t.test('inactivo no lee energía/actividad ni crea eventos',async()=>{
     allowed(await update('energy-user',{active:false},'owner'));

@@ -7,9 +7,11 @@ class ActivityScreen extends StatelessWidget {
     super.key,
     required this.activity,
     required this.onNavigate,
+    this.actorName,
   });
   final ActivityProvider activity;
   final ValueChanged<int> onNavigate;
+  final String? actorName;
   @override
   Widget build(BuildContext context) => AnimatedBuilder(
     animation: activity,
@@ -45,7 +47,7 @@ class ActivityScreen extends StatelessWidget {
                       leading: const Icon(Icons.history),
                       title: Text(entry.description),
                       subtitle: Text(
-                        entry.createdAt.toLocal().toString().split('.').first,
+                        '${actorName?.trim().isNotEmpty == true ? actorName!.trim() : "Tu cuenta"} · ${entry.createdAt.toLocal().toString().split('.').first}',
                       ),
                     ),
               ],

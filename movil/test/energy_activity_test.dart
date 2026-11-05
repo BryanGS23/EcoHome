@@ -55,7 +55,7 @@ void main() {
     },
   );
   test(
-    'muestra diaria idempotente y snapshot apagado/offline da cero',
+    'reintento de la misma hora es idempotente y apagado/offline da cero',
     () async {
       final now = DateTime.now().toUtc();
       expect(await service.simulateEnergy(['lamp', 'lamp'], now), 1);

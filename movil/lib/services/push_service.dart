@@ -13,6 +13,11 @@ class PushService extends ChangeNotifier {
   bool requesting = false, openNotifications = false;
   String? foregroundMessage;
   Future<void> start() async {
+    if (kIsWeb) {
+      status = 'Las notificaciones push se prueban en Android. Puedes consultar las notificaciones de la app aquí.';
+      notifyListeners();
+      return;
+    }
     _subscriptions.add(
       FirebaseMessaging.onMessage.listen((message) {
         foregroundMessage =
@@ -54,6 +59,11 @@ class PushService extends ChangeNotifier {
   }
 
   Future<void> enable() async {
+    if (kIsWeb) {
+      status = 'Las notificaciones push se prueban en Android. Puedes consultar las notificaciones de la app aquí.';
+      notifyListeners();
+      return;
+    }
     if (requesting) return;
     requesting = true;
     notifyListeners();

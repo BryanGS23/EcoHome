@@ -68,7 +68,9 @@ class AdminProvider extends ChangeNotifier {
     notifyListeners();
     try {
       if (collection == 'users' && id == user.uid) {
-        throw const AdminFailure('No puedes cambiar tu propio rol ni estado.');
+        throw const AdminFailure(
+          'No puedes modificar ni eliminar tu propia cuenta.',
+        );
       }
       if (value == null) {
         await repository.delete(collection, id!);

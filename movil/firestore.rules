@@ -3,11 +3,13 @@ service cloud.firestore {
   match /databases/{database}/documents {
     function activeUser() {
       return request.auth != null
+        && !exists(/databases/$(database)/documents/_user_deletions/$(request.auth.uid))
         && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.active == true;
     }
     function isAdmin() {
       let profile = get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
-      return request.auth != null && profile.active == true && profile.role == 'admin';
+      return request.auth != null && profile.active == true && profile.role == 'admin'
+        && !exists(/databases/$(database)/documents/_user_deletions/$(request.auth.uid));
     }
     function catalogChange() {
       return isAdmin() && getAfter(/databases/$(database)/documents/_admin/catalog).data.updatedAt == request.time;
@@ -51,9 +53,11 @@ service cloud.firestore {
         let device = get(/databases/$(database)/documents/devices/$(data.deviceId)).data;
         let watts = device.enabled && device.online ? device.energyConsumption : 0;
         return data.keys().hasAll(['deviceId','areaId','powerWatts','durationHours','consumption','recordedAt'])
-          && data.keys().hasOnly(['deviceId','areaId','powerWatts','durationHours','consumption','recordedAt'])
+          && data.keys().hasOnly(['deviceId','areaId','powerWatts','durationHours','consumption','recordedAt','simulationId'])
           && data.deviceId is string && data.areaId == device.areaId
-          && recordId == data.deviceId + '_' + string(int(request.time.toMillis() / 86400000))
+          && ((!('simulationId' in data) && recordId == data.deviceId + '_' + string(int(request.time.toMillis() / 86400000)))
+            || (data.get('simulationId', '') is string && data.get('simulationId', '').matches('[0-9]{1,20}')
+              && recordId == data.deviceId + '_' + request.auth.uid + '_' + data.simulationId))
           && data.powerWatts is number && data.powerWatts >= 0 && data.powerWatts <= 100000
           && data.powerWatts == watts && data.durationHours == 1
           && data.consumption is number && data.consumption == data.powerWatts * data.durationHours
@@ -180,6 +184,7 @@ service cloud.firestore {
       }
       allow get: if owner() || isAdmin();
       allow create: if owner() && valid(request.resource.data)
+        && !exists(/databases/$(database)/documents/_user_deletions/$(uid))
         && request.resource.data.email == request.auth.token.email
         && request.resource.data.role == 'user'
         && request.resource.data.active == true
@@ -191,6 +196,7 @@ service cloud.firestore {
         && request.resource.data.updatedAt == request.time;
       allow list: if isAdmin();
       allow update: if isAdmin() && request.auth.uid != uid && valid(request.resource.data)
+        && !exists(/databases/$(database)/documents/_user_deletions/$(uid))
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['role','active','updatedAt'])
         && request.resource.data.updatedAt == request.time;
       allow delete: if false;

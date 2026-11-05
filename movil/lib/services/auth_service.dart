@@ -1,4 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:google_sign_in/google_sign_in.dart';
 
 /// Único punto de acceso al SDK de Authentication.
@@ -26,6 +27,10 @@ class AuthService {
       _auth.sendPasswordResetEmail(email: email);
 
   Future<void> signInWithGoogle() async {
+    if (kIsWeb) {
+      await _auth.signInWithPopup(GoogleAuthProvider());
+      return;
+    }
     final google = GoogleSignIn.instance;
     await (_googleInitialization ??= google.initialize());
     final account = await google.authenticate();

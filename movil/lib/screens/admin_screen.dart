@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import '../models/device.dart';
 import '../models/app_user.dart';
+import '../models/activity_actor.dart';
 import '../providers/admin_provider.dart';
 import '../providers/user_provider.dart';
 import '../repositories/admin_repository.dart';
@@ -122,7 +123,8 @@ class _AdminScreenState extends State<AdminScreen> {
         '${d['type']} · ${admin.data['areas']?[d['areaId']]?['name'] ?? d['areaId']} · ${d['energyConsumption']} W',
       'scenes' =>
         '${d['enabled'] == true ? 'Habilitada' : 'Deshabilitada'} · ${(d['actions'] as List).length} acciones',
-      'activity' => '${d['userId']} · ${d['entityType']}\n$date',
+      'activity' =>
+        '${activityActorName(d, admin.data['users'] ?? {})} · ${d['entityType']}\n$date',
       _ => id,
     };
     return Card(
@@ -144,7 +146,7 @@ class _AdminScreenState extends State<AdminScreen> {
                         : () => _edit(id, d),
                     icon: const Icon(Icons.edit_outlined),
                   ),
-                  if (section != 'users')
+                  if (section != 'users' || id != widget.user.uid)
                     IconButton(
                       tooltip: 'Eliminar',
                       onPressed: admin.busy ? null : () => _delete(id, d),
@@ -166,8 +168,10 @@ class _AdminScreenState extends State<AdminScreen> {
           title: Text(
             admin.allowed ? 'Eliminar ${data['name']}' : 'Acceso revocado',
           ),
-          content: const Text(
-            'Se comprobarán las referencias antes de eliminar.',
+          content: Text(
+            collection == 'users'
+                ? 'Se eliminarán la cuenta, su perfil y sus alertas. No podrá iniciar sesión con esta cuenta. La actividad histórica y los datos compartidos del hogar se conservarán. Esta acción no se puede deshacer.'
+                : 'Se comprobarán las referencias antes de eliminar.',
           ),
           actions: [
             TextButton(

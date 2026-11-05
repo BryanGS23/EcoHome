@@ -12,6 +12,9 @@ class NotificationProvider extends ChangeNotifier {
   StreamSubscription<List<EcoAlert>>? _subscription;
   bool _disposed = false, loading = true, busy = false;
   int _generation = 0;
+  bool _viewing = false;
+  final _readingIds = <String>{};
+  final _confirmedReadIds = <String>{};
   List<EcoAlert> alerts = [];
   String? error, message;
   int get unreadAlerts => alerts.where((a) => !a.read).length;
@@ -28,10 +31,13 @@ class NotificationProvider extends ChangeNotifier {
         .listen(
           (items) {
             if (_disposed || generation != _generation) return;
-            alerts = items;
+            alerts = items
+                .map((a) => _confirmedReadIds.contains(a.id) ? a.asRead() : a)
+                .toList();
             loading = false;
             error = null;
             notifyListeners();
+            _readVisibleAlerts();
           },
           onError: (Object e) {
             if (_disposed || generation != _generation) return;
@@ -45,8 +51,40 @@ class NotificationProvider extends ChangeNotifier {
   }
 
   Future<void> markRead(EcoAlert alert) async {
-    if (alert.userId != uid || alert.read || busy || _disposed) return;
-    await _perform(() => repository.markRead(alert.id));
+    if (alert.userId != uid ||
+        alert.read ||
+        _disposed ||
+        !_readingIds.add(alert.id)) {
+      return;
+    }
+    try {
+      await repository.markRead(alert.id);
+      if (_disposed) return;
+      _confirmedReadIds.add(alert.id);
+      message = null;
+      alerts = alerts.map((a) => a.id == alert.id ? a.asRead() : a).toList();
+      notifyListeners();
+    } catch (_) {
+      if (!_disposed) {
+        message =
+            'No se pudo marcar la alerta como leída. Revisa la conexión y vuelve a intentarlo.';
+        notifyListeners();
+      }
+    } finally {
+      _readingIds.remove(alert.id);
+    }
+  }
+
+  void setViewing(bool viewing) {
+    _viewing = viewing;
+    if (viewing) _readVisibleAlerts();
+  }
+
+  void _readVisibleAlerts() {
+    if (!_viewing || _disposed) return;
+    for (final alert in alerts.where((a) => !a.read).toList()) {
+      unawaited(markRead(alert));
+    }
   }
 
   Future<void> checkDevices() async {

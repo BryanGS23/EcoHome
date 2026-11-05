@@ -19,8 +19,9 @@ class AdminRepository {
       _service.watch(collection);
   Future<void> save(String collection, String? id, Map<String, dynamic> data) =>
       _service.mutate(collection, id, data);
-  Future<void> delete(String collection, String id) =>
-      _service.mutate(collection, id, null);
+  Future<void> delete(String collection, String id) => collection == 'users'
+      ? _service.deleteUser(id)
+      : _service.mutate(collection, id, null);
 
   // Also called inside the transaction with fresh references, never just by forms.
   static void validate(

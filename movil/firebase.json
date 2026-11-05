@@ -18,6 +18,7 @@
       }
     }
   },
+  "functions": [{"source": "functions", "codebase": "ecohome", "ignore": ["node_modules", "test", "*.log"]}],
   "firestore": {
     "rules": "firestore.rules",
     "indexes": "firestore.indexes.json"

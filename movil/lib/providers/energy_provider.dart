@@ -19,6 +19,7 @@ class EnergyProvider extends ChangeNotifier {
   List<EnergyRecord> records = [];
   bool loading = true, saving = false;
   String? error, message;
+  bool get hasPendingSimulation => repository.hasPendingSimulation;
   double get today => byDay[_day] ?? 0;
   double get week => records
       .where(
@@ -88,13 +89,13 @@ class EnergyProvider extends ChangeNotifier {
       final count = await repository.simulate(ids);
       if (!_disposed) {
         message = count == 0
-            ? 'Las muestras de hoy ya existen.'
-            : 'Se guardaron $count muestras simuladas.';
+            ? 'La hora simulada ya estaba guardada; no se duplicó.'
+            : 'Se agregó una hora simulada para $count dispositivos.';
       }
     } catch (_) {
       if (!_disposed) {
         message =
-            'No se pudo completar la simulación. Revisa red, permisos y reloj del teléfono; puedes reintentar sin duplicar.';
+            'No se pudo completar la simulación. Revisa la conexión y reintenta para completar la misma hora sin duplicarla.';
       }
     } finally {
       saving = false;
